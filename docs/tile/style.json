@@ -1,0 +1,85 @@
+{
+  "version": 8,
+  "name": "jma-viz",
+  "sources": {
+    "points-source": {
+      "type": "vector",
+      "url": "http://[::]:8080/data/pmtiles.json"
+    },
+    "white-map": {
+      "type": "raster",
+      "tiles": ["https://cyberjapandata.gsi.go.jp/xyz/blank/{z}/{x}/{y}.png"],
+      "minzoom": 0,
+      "maxzoom": 14
+    }
+  },
+  "sprite": "",
+  "glyphs": "https://orangemug.github.io/font-glyphs/glyphs/{fontstack}/{range}.pbf",
+  "layers": [
+    {
+      "id": "white-map",
+      "type": "raster",
+      "source": "white-map",
+      "layout": {"visibility": "visible"}
+    },
+    {
+      "id": "pmtiles",
+      "type": "circle",
+      "source": "points-source",
+      "source-layer": "points",
+      "minzoom": 3,
+      "maxzoom": 24,
+      "layout": {"visibility": "visible"},
+      "paint": {
+        "circle-color": [
+          "interpolate",
+          ["linear"],
+          ["get", "max_temp"],
+          0,
+          "rgba(64,0,173, 1)",
+          10,
+          "rgba(66,101,255, 1)",
+          20,
+          "rgba(179,244,255, 1)",
+          30,
+          "rgba(252,238,112, 1)",
+          35,
+          "rgba(224,72,72, 1)",
+          40,
+          "rgba(183,51,32, 1)"
+        ],
+        "circle-stroke-color": "rgba(178, 178, 178, 1)",
+        "circle-radius": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          3,
+          0.5,
+          5,
+          1,
+          7,
+          4,
+          8,
+          9,
+          10,
+          25
+        ],
+        "circle-stroke-width": 0
+      }
+    },
+    {
+      "id": "pmtiles-symbol",
+      "type": "symbol",
+      "source": "points-source",
+      "source-layer": "points",
+      "minzoom": 8,
+      "layout": {
+        "text-field": ["get", "max_temp"],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": 14,
+        "visibility": "visible"
+      },
+      "paint": {"text-color": "rgba(255, 255, 255, 1)", "text-opacity": 1}
+    }
+  ]
+}
