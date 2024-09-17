@@ -1,21 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <title>WebGL points layer</title>
-    <script src='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js'></script>
-    <script src="https://cdn.jsdelivr.net/npm/pmtiles@3.0.7/dist/pmtiles.min.js"></script>
-    <link href='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css' rel='stylesheet' /> 
-    <style>
-      .map {
-        width: 100vw;
-        height: 100vh;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="map" class="map"></div>
+
+<head>
+  <meta charset="UTF-8">
+  <title>WebGL points layer</title>
+  <script src='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js'></script>
+  <script src="https://cdn.jsdelivr.net/npm/pmtiles@3.0.7/dist/pmtiles.min.js"></script>
+  <link href='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css' rel='stylesheet' />
+  <style>
+    .map {
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .map-overlay {
+      font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+      position: absolute;
+      width: 200px;
+      top: 0;
+      left: 0;
+      padding: 10px;
+    }
+
+    .map-overlay .map-overlay-inner {
+      background-color: #fff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      border-radius: 3px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .map-overlay-inner fieldset {
+      border: none;
+      padding: 0;
+      margin: 0 0 10px;
+    }
+
+    .map-overlay-inner fieldset:last-child {
+      margin: 0;
+    }
+
+    .map-overlay-inner select {
+      width: 100%;
+    }
+
+    .map-overlay-inner label {
+      display: block;
+      font-weight: bold;
+      margin: 0 0 5px;
+    }
+
+    .map-overlay-inner button {
+      display: inline-block;
+      width: 36px;
+      height: 20px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .map-overlay-inner button:focus {
+      outline: none;
+    }
+
+    .map-overlay-inner button:hover {
+      box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .radio-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+    }
+
+    .radio-option input[type="radio"] {
+      margin-top: -5px;
+      vertical-align: middle;
+    }
+
+    .radio-option label {
+      font-size: 12px;
+      line-height: 1.2;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map" class="map"></div>
+  <div class="map-overlay top">
+    <div class="map-overlay-inner">
+      <fieldset>
+        <label for="date">日付</label>
+        <select id="date" name="date">
+          <option value="20240915">2024/09/15</option>
+        </select>
+      </fieldset>
+      <fieldset>
+        <div class="radio-options">
+          <div class="radio-option">
+            <input type="radio" id="max" name="temp" value="max" checked />
+            <label for="max">予想最高気温</label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" id="min" name="temp" value="min" />
+            <label for="min">予想最低気温</label>
+          </div>
+        </div>
+      </fieldset>
+      <div id="legend"
+        style="background-color: white; padding: 10px; border-radius: 5px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);">
+        <label for="legend-gradient">気温(°C)</label>
+        <div id="legend-gradient"></div>
+      </div>
+    </div>
     <script type="module" src="main.js"></script>
-  </body>
+</body>
+
 </html>
-  
