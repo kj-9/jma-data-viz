@@ -15,6 +15,9 @@ jobs:
       run: |- 
         sudo apt-get install -y --no-install-recommends libsqlite3-mod-spatialite
         pip install sqlite-utils
+
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" # add brew to PATH
+        brew install tippecanoe
     - name: update dates.json and tiles
       run: |
         bash scripts/clone-data.sh
