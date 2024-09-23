@@ -55,5 +55,3 @@ tippecanoe $FILE_GEOJSON \
   -l points \
   --drop-densest-as-needed \
   -zg --coalesce-densest-as-needed --extend-zooms-if-still-dropping
-  
-#tileserver-gl-light docs/tile/out.pmtiles
