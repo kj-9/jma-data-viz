@@ -19,7 +19,9 @@ jobs:
       run: |
         bash scripts/clone-data.sh
         bash scripts/make-dates-json.sh
-        bash scripts/make-tile.sh
+        for day in $(jq -r '.[0:2][]' docs/tile/temperature/dates.json); do
+          bash scripts/make-tile.sh $day
+        done
 
     - name: Commit and push
       run: |-
