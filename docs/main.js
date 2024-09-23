@@ -1,21 +1,32 @@
 // URL for pmtiles file hosted on the web
 // pmtiles file should be hosted on the web server at the ./tile/ relative to index.html
-const pmtilesURL = `pmtiles://${
-  location.href.replace("index.html", "")
-}tile/out.pmtiles`;
-console.log(`Loading pmtiles at ${pmtilesURL}...`);
+const dates = [
+  "20240923",
+  "20240915",
+]
 
-// apply pmtiles source
-const pmtilesSource = {
-  "type": "vector",
-  "url": pmtilesURL,
-};
+function getPmtileSource(date) {
+  const baseURL = location.href.replace("index.html", "");
+  const pmtilesURL = `pmtiles://${baseURL}tile/temperature/${date}.pmtiles`;
+  
+  // apply pmtiles source
+  return  {
+    "type": "vector",
+    "url": pmtilesURL,
+  };
+
+}
+
+const initialPmtileSource = getPmtileSource(dates[0]);
+
+console.log(`Loading initialPmtileSource: ${initialPmtileSource.url}`);
+
 
 // fetch and load json style file
 const style = await fetch("tile/style.json")
   .then((response) => response.json());
 
-style.sources["points-source"] = pmtilesSource;
+style.sources["points-source"] = initialPmtileSource;
 
 // add pmtiles protocol
 let protocol = new pmtiles.Protocol();
@@ -28,6 +39,30 @@ const map = new maplibregl.Map({
   center: [139.7, 35.7],
   zoom: 5, // starting zoom
 });
+
+
+// create date selector
+const dateSelector = document.getElementById('date-selector');
+dates.forEach((date) => {
+  const option = document.createElement('option');
+  option.value = date;
+  option.textContent = date;
+  dateSelector.appendChild(option);
+});
+
+// on date change, update the source
+dateSelector.addEventListener("change", function(event) {
+  const selectedDate = event.target.value;
+  console.log("Selected date:", selectedDate);
+
+  const newSource = getPmtileSource(selectedDate);
+
+  style.sources["points-source"] = newSource;
+
+  map.setStyle(style);
+  console.log(`Loading pmtilesSource: ${newSource.url}`);
+});
+
 
 
 // create a legend element
@@ -56,8 +91,6 @@ document.querySelectorAll('input[name="temp"]').forEach((el) => {
     
   });
 });
-
-
 
 
 // functions ----------------------------
