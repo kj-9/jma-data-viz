@@ -1,9 +1,7 @@
 // URL for pmtiles file hosted on the web
 // pmtiles file should be hosted on the web server at the ./tile/ relative to index.html
-const dates = [
-  "20240923",
-  "20240915",
-]
+const dates = await fetch("tile/temperature/dates.json")
+  .then((response) => response.json());
 
 function getPmtileSource(date) {
   const baseURL = location.href.replace("index.html", "");
