@@ -110,7 +110,7 @@
         "visibility": "visible"
       },
       "paint": {
-        "text-color": "rgba(255, 255, 255, 1)",
+        "text-color": "rgba(120, 120, 120, 1)",
         "text-opacity": 1
       }
     }
