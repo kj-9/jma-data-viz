@@ -1,4 +1,6 @@
 #!/bin/bash
+set -eu -o pipefail
+
 
 # git clone a file with no extra history
 rm -rf jma-data
@@ -8,4 +10,4 @@ git sparse-checkout set data/jma.db.gz
 git checkout
 
 # gunzip
-gunzip -k "jma.db.gz"
+gunzip -k "data/jma.db.gz"
