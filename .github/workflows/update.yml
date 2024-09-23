@@ -19,6 +19,8 @@ jobs:
       run: |
         bash scripts/clone-data.sh
         bash scripts/make-dates-json.sh
+
+        # only update the latest 2 days
         for day in $(jq -r '.[0:2][]' docs/tile/temperature/dates.json); do
           bash scripts/make-tile.sh $day
         done
