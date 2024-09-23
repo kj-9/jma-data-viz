@@ -53,16 +53,10 @@
           "interpolate",
           ["linear"],
           ["zoom"],
-          3,
-          0.5,
-          5,
-          1,
-          7,
-          4,
-          8,
-          9,
-          10,
-          25
+          3, 0.5,
+          6, 2,
+          9, 15,
+          13, 90
         ],
         "circle-stroke-width": 0
       }
@@ -76,7 +70,14 @@
       "layout": {
         "text-field": ["get", "max_temp"],
         "text-font": ["Noto Sans Regular"],
-        "text-size": 14,
+        "text-size": [ "interpolate",
+        ["linear"],
+        ["zoom"],
+        9,
+        14,
+        13,
+        90
+      ],
         "visibility": "visible"
       },
       "paint": {"text-color": "rgba(255, 255, 255, 1)", "text-opacity": 1}
