@@ -32,7 +32,8 @@ where date_id in (
     select date_id
     from dates
     where valid_date = :valid_date
-);' -p valid_date $VALID_DATE
+)
+and ST_Within(points.geometry, (select geometry from land_areas));' -p valid_date $VALID_DATE
 
 
 splite \

@@ -78,7 +78,12 @@
           90
         ],
         "circle-stroke-width": 0
-      }
+      },
+      "filter": [
+        "==",
+        "is_land",
+        true
+      ]
     },
     {
       "id": "pmtiles-symbol",
