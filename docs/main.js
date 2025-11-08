@@ -45,21 +45,29 @@ const EARTH_RADIUS_METERS = 6378137;
 
 const radiusInput = document.getElementById('radius-input');
 const searchResultPanel = document.getElementById('search-result');
+const recentDatesContainer = document.getElementById('recent-dates');
+const prevDateBtn = document.getElementById('prev-date-btn');
+const nextDateBtn = document.getElementById('next-date-btn');
+const dateSelector = document.getElementById('date-selector');
+const radiusValueLabel = document.getElementById('radius-value');
 let radiusKm = 50;
 if (radiusInput) {
   const initialRadius = Number(radiusInput.value);
   if (Number.isFinite(initialRadius) && initialRadius > 0) {
     radiusKm = initialRadius;
   }
+  updateRadiusLabel(radiusKm);
+} else if (radiusValueLabel) {
+  radiusValueLabel.textContent = `${radiusKm}`;
 }
 let selectedLngLat = null;
 let centerMarker = null;
 let coldestMarker = null;
 let pendingSearch = false;
+let selectedDateIndex = 0;
 
 
 // create date selector
-const dateSelector = document.getElementById('date-selector');
 dates.forEach((date) => {
   const option = document.createElement('option');
   option.value = date;
@@ -67,22 +75,21 @@ dates.forEach((date) => {
   dateSelector.appendChild(option);
 });
 
+renderRecentDateButtons();
+updateDateUIState();
+
 // on date change, update the source
-dateSelector.addEventListener("change", function(event) {
-  const selectedDate = event.target.value;
-  console.log("Selected date:", selectedDate);
+if (dateSelector) {
+  dateSelector.addEventListener("change", function(event) {
+    const selectedDate = event.target.value;
+    applyDateChange(selectedDate);
+  });
+}
 
-  const newSource = getPmtileSource(selectedDate);
-
-  style.sources["mesh-source"] = newSource;
-
-  map.setStyle(style);
-  console.log(`Loading pmtilesSource: ${newSource.url}`);
-
-  if (selectedLngLat) {
-    map.once("idle", () => runColdestSearch());
-  }
-});
+if (prevDateBtn && nextDateBtn) {
+  prevDateBtn.addEventListener("click", () => stepDate(1));
+  nextDateBtn.addEventListener("click", () => stepDate(-1));
+}
 
 
 
@@ -122,6 +129,7 @@ if (radiusInput) {
   radiusInput.addEventListener("input", (event) => {
     const parsed = Number(event.target.value);
     radiusKm = Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+    updateRadiusLabel(radiusKm);
     if (selectedLngLat) {
       updateSearchAreaDisplay();
       runColdestSearch();
@@ -465,4 +473,80 @@ function emptyFeature() {
     type: "FeatureCollection",
     features: [],
   };
+}
+
+function renderRecentDateButtons() {
+  if (!recentDatesContainer) {
+    return;
+  }
+  recentDatesContainer.innerHTML = "";
+  const displayDates = dates.slice(0, 6);
+  displayDates.forEach((date) => {
+    const button = document.createElement("button");
+    button.className = "chip-button";
+    button.textContent = formatDateLabel(date);
+    button.dataset.date = date;
+    button.addEventListener("click", () => applyDateChange(date));
+    recentDatesContainer.appendChild(button);
+  });
+}
+
+function updateDateUIState() {
+  if (dateSelector) {
+    dateSelector.value = dates[selectedDateIndex];
+  }
+  if (recentDatesContainer) {
+    recentDatesContainer.querySelectorAll(".chip-button").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.date === dates[selectedDateIndex]);
+    });
+  }
+  if (prevDateBtn) {
+    prevDateBtn.disabled = selectedDateIndex >= dates.length - 1;
+  }
+  if (nextDateBtn) {
+    nextDateBtn.disabled = selectedDateIndex <= 0;
+  }
+}
+
+function applyDateChange(date) {
+  const newIndex = dates.indexOf(date);
+  if (newIndex === -1 || newIndex === selectedDateIndex) {
+    return;
+  }
+  selectedDateIndex = newIndex;
+  updateDateUIState();
+
+  const newSource = getPmtileSource(date);
+  style.sources["mesh-source"] = newSource;
+  map.setStyle(style);
+  console.log(`Loading pmtilesSource: ${newSource.url}`);
+
+  if (selectedLngLat) {
+    map.once("idle", () => runColdestSearch());
+  }
+}
+
+function stepDate(offset) {
+  const targetIndex = selectedDateIndex + offset;
+  if (targetIndex < 0 || targetIndex >= dates.length) {
+    return;
+  }
+  applyDateChange(dates[targetIndex]);
+}
+
+function formatDateLabel(compact) {
+  if (!compact || compact.length !== 8) {
+    return compact;
+  }
+  const y = compact.slice(0, 4);
+  const m = compact.slice(4, 6);
+  const d = compact.slice(6, 8);
+  return `${y}/${m}/${d}`;
+}
+
+function updateRadiusLabel(value) {
+  if (!radiusValueLabel) {
+    return;
+  }
+  radiusValueLabel.textContent = `${value}`;
 }
