@@ -38,6 +38,14 @@ const map = new maplibregl.Map({
   zoom: 5, // starting zoom
 });
 
+const radiusInput = document.getElementById('radius-input');
+const searchResultPanel = document.getElementById('search-result');
+let radiusKm = Number(radiusInput?.value) || 50;
+let selectedLngLat = null;
+let centerMarker = null;
+let coldestMarker = null;
+let pendingSearch = false;
+
 
 // create date selector
 const dateSelector = document.getElementById('date-selector');
@@ -59,6 +67,10 @@ dateSelector.addEventListener("change", function(event) {
 
   map.setStyle(style);
   console.log(`Loading pmtilesSource: ${newSource.url}`);
+
+  if (selectedLngLat) {
+    map.once("idle", () => runColdestSearch());
+  }
 });
 
 
@@ -73,7 +85,8 @@ const colorScheme = convertColorScheme(circleColor);
 createTemperatureGradientLegend(legendGradient, colorScheme);
 
 // add interactivity
-document.querySelectorAll('input[name="temp"]').forEach((el) => {
+const temperatureInputs = document.querySelectorAll('input[name="temp"]');
+temperatureInputs.forEach((el) => {
   el.addEventListener("change", function(event) {
     const selectedValue = event.target.value;
     console.log("Selected value:", selectedValue);
@@ -86,8 +99,25 @@ document.querySelectorAll('input[name="temp"]').forEach((el) => {
     // update the color scheme
     map.setPaintProperty("pmtiles", "circle-color", circleColor);
     map.setLayoutProperty("pmtiles-symbol", "text-field", textField);
+
+    if (selectedLngLat) {
+      runColdestSearch();
+    }
     
   });
+});
+
+radiusInput.addEventListener("input", (event) => {
+  const parsed = Number(event.target.value);
+  radiusKm = Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+  if (selectedLngLat) {
+    runColdestSearch();
+  }
+});
+
+map.on("load", () => {
+  map.getCanvas().style.cursor = "crosshair";
+  map.on("click", handleMapClick);
 });
 
 
@@ -131,4 +161,124 @@ function createTemperatureGradientLegend(node, colorScheme) {
           labelsContainer.appendChild(label);
       }
   });
+}
+
+function handleMapClick(event) {
+  selectedLngLat = event.lngLat;
+  if (!centerMarker) {
+    centerMarker = new maplibregl.Marker({ color: "#444" });
+  }
+  centerMarker.setLngLat(selectedLngLat).addTo(map);
+  runColdestSearch();
+}
+
+function getSelectedMetricKey() {
+  const selectedRadio = document.querySelector('input[name="temp"]:checked');
+  const metric = selectedRadio ? selectedRadio.value : "max";
+  return `${metric}_temp`;
+}
+
+// MapLibreのイベントと距離APIだけで半径検索を完結させる
+function runColdestSearch() {
+  if (!selectedLngLat || !radiusKm) {
+    updateResultPanel();
+    return;
+  }
+
+  if (!map.isStyleLoaded()) {
+    if (!pendingSearch) {
+      pendingSearch = true;
+      map.once("idle", () => {
+        pendingSearch = false;
+        runColdestSearch();
+      });
+    }
+    return;
+  }
+
+  const radiusMeters = radiusKm * 1000;
+  const candidateFeatures = queryFeaturesNearSelection(selectedLngLat, radiusMeters);
+  const metricKey = getSelectedMetricKey();
+  const center = new maplibregl.LngLat(selectedLngLat.lng, selectedLngLat.lat);
+
+  let coldest = null;
+
+  candidateFeatures.forEach((feature) => {
+    const coords = feature.geometry?.coordinates;
+    if (!coords) {
+      return;
+    }
+    const candidate = new maplibregl.LngLat(coords[0], coords[1]);
+    const distance = center.distanceTo(candidate);
+    if (distance > radiusMeters) {
+      return;
+    }
+    const value = Number(feature.properties?.[metricKey]);
+    if (Number.isNaN(value)) {
+      return;
+    }
+    if (!coldest || value < coldest.value) {
+      coldest = {
+        value,
+        distance,
+        coordinates: coords,
+        properties: feature.properties,
+      };
+    }
+  });
+
+  if (!coldest) {
+    updateResultPanel();
+    updateResultMarker();
+    return;
+  }
+
+  updateResultPanel(coldest);
+  updateResultMarker(coldest.coordinates);
+}
+
+// queryRenderedFeaturesにはピクセル単位のバウンディングボックスが必要なので距離をピクセルへ変換
+function queryFeaturesNearSelection(center, radiusMeters) {
+  const metersPerPixel = getMetersPerPixel(center.lat, map.getZoom());
+  const radiusPixels = radiusMeters / metersPerPixel;
+  const projected = map.project(center);
+  const minPoint = [projected.x - radiusPixels, projected.y - radiusPixels];
+  const maxPoint = [projected.x + radiusPixels, projected.y + radiusPixels];
+  return map.queryRenderedFeatures([minPoint, maxPoint], { layers: ["pmtiles"] });
+}
+
+// Webメルカトルの解像度 (m/px) を算出し、任意半径をスクリーンスペースに写像する
+function getMetersPerPixel(latitude, zoom) {
+  const earthCircumference = 40075016.686; // meters
+  return (earthCircumference * Math.cos((latitude * Math.PI) / 180)) / Math.pow(2, zoom + 8);
+}
+
+function updateResultPanel(result) {
+  if (!result) {
+    searchResultPanel.textContent = "指定半径内に気温データがありません。ズームや半径を調整して再検索してください。";
+    return;
+  }
+
+  const tempLabel = getSelectedMetricKey() === "min_temp" ? "最低気温" : "最高気温";
+  const distanceKm = (result.distance / 1000).toFixed(1);
+  searchResultPanel.innerHTML = `
+    <div><strong>${tempLabel}</strong>${result.value.toFixed(1)} °C</div>
+    <div><strong>距離</strong>${distanceKm} km</div>
+    <div><strong>座標</strong>${result.coordinates[1].toFixed(3)}, ${result.coordinates[0].toFixed(3)}</div>
+  `;
+}
+
+function updateResultMarker(coordinates) {
+  if (!coordinates) {
+    if (coldestMarker) {
+      coldestMarker.remove();
+      coldestMarker = null;
+    }
+    return;
+  }
+
+  if (!coldestMarker) {
+    coldestMarker = new maplibregl.Marker({ color: "#ff3b30" });
+  }
+  coldestMarker.setLngLat(coordinates).addTo(map);
 }
