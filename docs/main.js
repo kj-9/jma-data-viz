@@ -38,6 +38,11 @@ const map = new maplibregl.Map({
   zoom: 5, // starting zoom
 });
 
+const SEARCH_AREA_SOURCE_ID = "search-area";
+const SEARCH_AREA_FILL_LAYER_ID = "search-area-fill";
+const SEARCH_AREA_LINE_LAYER_ID = "search-area-outline";
+const EARTH_RADIUS_METERS = 6378137;
+
 const radiusInput = document.getElementById('radius-input');
 const searchResultPanel = document.getElementById('search-result');
 let radiusKm = Number(radiusInput?.value) || 50;
@@ -111,13 +116,25 @@ radiusInput.addEventListener("input", (event) => {
   const parsed = Number(event.target.value);
   radiusKm = Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
   if (selectedLngLat) {
+    updateSearchAreaDisplay();
     runColdestSearch();
   }
 });
 
 map.on("load", () => {
   map.getCanvas().style.cursor = "crosshair";
+  addSearchAreaLayers();
   map.on("click", handleMapClick);
+});
+
+map.on("styledata", () => {
+  if (!map.isStyleLoaded()) {
+    return;
+  }
+  addSearchAreaLayers();
+  if (selectedLngLat) {
+    updateSearchAreaDisplay();
+  }
 });
 
 
@@ -169,6 +186,7 @@ function handleMapClick(event) {
     centerMarker = new maplibregl.Marker({ color: "#444" });
   }
   centerMarker.setLngLat(selectedLngLat).addTo(map);
+  updateSearchAreaDisplay();
   runColdestSearch();
 }
 
@@ -235,6 +253,7 @@ function runColdestSearch() {
 
   updateResultPanel(coldest);
   updateResultMarker(coldest.coordinates);
+  updateSearchAreaDisplay();
 }
 
 // queryRenderedFeaturesにはピクセル単位のバウンディングボックスが必要なので距離をピクセルへ変換
@@ -281,4 +300,109 @@ function updateResultMarker(coordinates) {
     coldestMarker = new maplibregl.Marker({ color: "#ff3b30" });
   }
   coldestMarker.setLngLat(coordinates).addTo(map);
+}
+
+function addSearchAreaLayers() {
+  if (!map.getSource(SEARCH_AREA_SOURCE_ID)) {
+    map.addSource(SEARCH_AREA_SOURCE_ID, {
+      type: "geojson",
+      data: emptyFeature(),
+    });
+  }
+
+  if (!map.getLayer(SEARCH_AREA_FILL_LAYER_ID)) {
+    map.addLayer({
+      id: SEARCH_AREA_FILL_LAYER_ID,
+      type: "fill",
+      source: SEARCH_AREA_SOURCE_ID,
+      paint: {
+        "fill-color": "#5b8def",
+        "fill-opacity": 0.08,
+      },
+    });
+  }
+
+  if (!map.getLayer(SEARCH_AREA_LINE_LAYER_ID)) {
+    map.addLayer({
+      id: SEARCH_AREA_LINE_LAYER_ID,
+      type: "line",
+      source: SEARCH_AREA_SOURCE_ID,
+      paint: {
+        "line-color": "#5b8def",
+        "line-width": 1,
+      },
+    });
+  }
+}
+
+function updateSearchAreaDisplay() {
+  const source = map.getSource(SEARCH_AREA_SOURCE_ID);
+  if (!source) {
+    return;
+  }
+
+  if (!selectedLngLat || !radiusKm) {
+    source.setData(emptyFeature());
+    return;
+  }
+
+  source.setData(createCircleFeature(selectedLngLat, radiusKm * 1000));
+}
+
+function createCircleFeature(center, radiusMeters, steps = 64) {
+  const ring = [];
+  const latRad = degreesToRadians(center.lat);
+  const lngRad = degreesToRadians(center.lng);
+  const angularDistance = radiusMeters / EARTH_RADIUS_METERS;
+
+  for (let i = 0; i <= steps; i++) {
+    const bearing = (2 * Math.PI * i) / steps;
+    const sinLat = Math.sin(latRad);
+    const cosLat = Math.cos(latRad);
+    const sinAngular = Math.sin(angularDistance);
+    const cosAngular = Math.cos(angularDistance);
+    const sinBearing = Math.sin(bearing);
+    const cosBearing = Math.cos(bearing);
+
+    const lat2 = Math.asin(
+      sinLat * cosAngular + cosLat * sinAngular * cosBearing
+    );
+    const lng2 =
+      lngRad +
+      Math.atan2(
+        sinBearing * sinAngular * cosLat,
+        cosAngular - sinLat * Math.sin(lat2)
+      );
+
+    ring.push([radiansToDegrees(lng2), radiansToDegrees(lat2)]);
+  }
+
+  return {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [ring],
+        },
+        properties: {},
+      },
+    ],
+  };
+}
+
+function degreesToRadians(degrees) {
+  return (degrees * Math.PI) / 180;
+}
+
+function radiansToDegrees(radians) {
+  return (radians * 180) / Math.PI;
+}
+
+function emptyFeature() {
+  return {
+    type: "FeatureCollection",
+    features: [],
+  };
 }
