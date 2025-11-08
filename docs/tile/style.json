@@ -85,7 +85,7 @@
       "type": "symbol",
       "source": "mesh-source",
       "source-layer": "mesh",
-      "minzoom": 8,
+      "minzoom": 7,
       "layout": {
         "text-field": [
           "get",
@@ -107,6 +107,7 @@
           13,
           60
         ],
+        "text-allow-overlap": false,
         "visibility": "visible"
       },
       "paint": {
