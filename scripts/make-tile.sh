@@ -59,6 +59,7 @@ echo "drop table geojson ..."
 splite "select DropTable('main', 'geojson');"
 
 
+# TODO: migrate existing pmtiles once to remove sea-only points (rerun make-tile.sh for each date).
 echo "creating tile ..."
 tippecanoe $FILE_GEOJSON \
   --force \
