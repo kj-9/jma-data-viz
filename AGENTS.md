@@ -6,6 +6,7 @@
 ## Build, Test, and Development Commands
 - `bash scripts/clone-data.sh` — clones the sparse `jma-data` repo and decompresses `jma.db.gz`.
 - `bash scripts/make-dates-json.sh` — pulls distinct forecast dates via `sqlite-utils` + `jq`, writing `docs/tile/temperature/dates.json`.
+- `bash scripts/update-land-mask.sh` — downloads Natural Earth 10m admin polygons and refreshes `data/japan-land.geojson` (required before tile generation when coastline updates).
 - `bash scripts/make-tile.sh 20240923` — exports the date to GeoJSON with Spatialite (clipped to `data/japan-land.geojson`) and builds `{date}.pmtiles` via Tippecanoe.
 - `bash scripts/run-maptunik.sh` — serves the sample tile with `tileserver-gl-light` and launches Maputnik on port 8888.
 
@@ -21,4 +22,4 @@ Manual verification only. After generating tiles, serve `docs/` (e.g., `python -
 History currently uses timestamp-only subjects; switch to concise imperative messages (`feat: add 20240923 tiles`). Mention data vintage or tool versions in bodies. PRs should include purpose, commands run, before/after screenshots, validation notes (Maputnik or browser), and links to issues or forecast cycle IDs so reviewers can reproduce the dataset quickly.
 
 ## Data & Configuration Tips
-`sqlite-utils`, the `spatialite` extension, `jq`, `tippecanoe`, and Docker must be available; export `SPATIALITE_SECURITY=relaxed` only while building tiles. Keep the raw `jma-data` checkout outside `docs/` to avoid publishing heavy artefacts. Maintain `data/japan-land.geojson` (Natural Earth 110m equivalent) so `make-tile.sh` can drop points that never intersect land before tile generation. Reference MapLibre, PMTiles, and similar libraries via CDN to keep GitHub Pages deployments light.
+`sqlite-utils`, the `spatialite` extension, `jq`, `tippecanoe`, `ogr2ogr` (GDAL), and Docker must be available; export `SPATIALITE_SECURITY=relaxed` only while building tiles. Keep the raw `jma-data` checkout outside `docs/` to avoid publishing heavy artefacts. Maintain `data/japan-land.geojson` (regenerate via `scripts/update-land-mask.sh`) so `make-tile.sh` can drop points that never intersect land before tile generation. Reference MapLibre, PMTiles, and similar libraries via CDN to keep GitHub Pages deployments light.

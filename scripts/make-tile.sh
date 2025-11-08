@@ -8,6 +8,13 @@ FILE_GEOJSON="jma-data/data/jma.geojson"
 # arg
 VALID_DATE=$1 # from arg like "20240923"
 
+# land mask
+FILE_LAND_GEOJSON="data/japan-land.geojson"
+if [[ ! -f "$FILE_LAND_GEOJSON" ]]; then
+  echo "Missing land mask at $FILE_LAND_GEOJSON. Run curl -L https://raw.githubusercontent.com/johan/world.geo.json/master/countries/JPN.geo.json -o $FILE_LAND_GEOJSON" >&2
+  exit 1
+fi
+LAND_GEOMETRY=$(jq -c '.features[0].geometry' "$FILE_LAND_GEOJSON")
 
 # alias
 splite() {
@@ -32,7 +39,11 @@ where date_id in (
     select date_id
     from dates
     where valid_date = :valid_date
-);' -p valid_date $VALID_DATE
+)
+and ST_Intersects(
+    points.geometry,
+    GeomFromGeoJSON(:land_geojson)
+);' -p valid_date $VALID_DATE -p land_geojson "$LAND_GEOMETRY"
 
 
 splite \
