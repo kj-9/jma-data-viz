@@ -2,7 +2,7 @@
   "version": 8,
   "name": "jma-viz",
   "sources": {
-    "points-source": {
+    "mesh-source": {
       "type": "vector",
       "url": "http://[::]:8080/data/pmtiles.json"
     },
@@ -27,17 +27,17 @@
       }
     },
     {
-      "id": "pmtiles",
-      "type": "circle",
-      "source": "points-source",
-      "source-layer": "points",
+      "id": "mesh-fill",
+      "type": "fill",
+      "source": "mesh-source",
+      "source-layer": "mesh",
       "minzoom": 3,
       "maxzoom": 24,
       "layout": {
         "visibility": "visible"
       },
       "paint": {
-        "circle-color": [
+        "fill-color": [
           "interpolate",
           [
             "linear"
@@ -46,45 +46,45 @@
             "get",
             "max_temp"
           ],
+          -15,
+          "#eef3fb",
           0,
-          "rgba(64,0,173, 1)",
+          "#cbddec",
           10,
-          "rgba(66,101,255, 1)",
+          "#98c5e0",
           20,
-          "rgba(179,244,255, 1)",
+          "#68a8cf",
           30,
-          "rgba(252,238,112, 1)",
+          "#f4d9b5",
           35,
-          "rgba(224,72,72, 1)",
+          "#f0b78a",
           40,
-          "rgba(183,51,32, 1)"
+          "#d87a62"
         ],
-        "circle-stroke-color": "rgba(178, 178, 178, 1)",
-        "circle-radius": [
-          "interpolate",
-          [
-            "linear"
-          ],
-          [
-            "zoom"
-          ],
-          3,
-          0.5,
-          6,
-          2,
-          9,
-          15,
-          13,
-          90
-        ],
-        "circle-stroke-width": 0
+        "fill-opacity": 0.65
       }
     },
     {
-      "id": "pmtiles-symbol",
+      "id": "mesh-outline",
+      "type": "line",
+      "source": "mesh-source",
+      "source-layer": "mesh",
+      "minzoom": 3,
+      "maxzoom": 24,
+      "layout": {
+        "visibility": "visible"
+      },
+      "paint": {
+        "line-color": "rgba(255, 255, 255, 0.35)",
+        "line-width": 0.5,
+        "line-opacity": 0.9
+      }
+    },
+    {
+      "id": "mesh-symbol",
       "type": "symbol",
-      "source": "points-source",
-      "source-layer": "points",
+      "source": "mesh-source",
+      "source-layer": "mesh",
       "minzoom": 8,
       "layout": {
         "text-field": [
@@ -103,15 +103,17 @@
             "zoom"
           ],
           9,
-          14,
+          12,
           13,
-          90
+          60
         ],
         "visibility": "visible"
       },
       "paint": {
-        "text-color": "rgba(120, 120, 120, 1)",
-        "text-opacity": 1
+        "text-color": "rgba(90, 90, 90, 1)",
+        "text-halo-color": "rgba(255,255,255,0.75)",
+        "text-halo-width": 0.5,
+        "text-opacity": 0.9
       }
     }
   ]

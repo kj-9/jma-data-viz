@@ -24,7 +24,7 @@ console.log(`Loading initialPmtileSource: ${initialPmtileSource.url}`);
 const style = await fetch("tile/style.json")
   .then((response) => response.json());
 
-style.sources["points-source"] = initialPmtileSource;
+style.sources["mesh-source"] = initialPmtileSource;
 
 // add pmtiles protocol
 let protocol = new pmtiles.Protocol();
@@ -45,7 +45,13 @@ const EARTH_RADIUS_METERS = 6378137;
 
 const radiusInput = document.getElementById('radius-input');
 const searchResultPanel = document.getElementById('search-result');
-let radiusKm = Number(radiusInput?.value) || 50;
+let radiusKm = 50;
+if (radiusInput) {
+  const initialRadius = Number(radiusInput.value);
+  if (Number.isFinite(initialRadius) && initialRadius > 0) {
+    radiusKm = initialRadius;
+  }
+}
 let selectedLngLat = null;
 let centerMarker = null;
 let coldestMarker = null;
@@ -68,7 +74,7 @@ dateSelector.addEventListener("change", function(event) {
 
   const newSource = getPmtileSource(selectedDate);
 
-  style.sources["points-source"] = newSource;
+  style.sources["mesh-source"] = newSource;
 
   map.setStyle(style);
   console.log(`Loading pmtilesSource: ${newSource.url}`);
@@ -83,9 +89,9 @@ dateSelector.addEventListener("change", function(event) {
 // create a legend element
 const legendGradient = document.getElementById('legend-gradient');
 
-const circleColor = style.layers.find((l) => l.id === "pmtiles")["paint"]["circle-color"];
-const textField = style.layers.find((l) => l.id === "pmtiles-symbol")["layout"]["text-field"];
-const colorScheme = convertColorScheme(circleColor);
+const fillColor = style.layers.find((l) => l.id === "mesh-fill")["paint"]["fill-color"];
+const textField = style.layers.find((l) => l.id === "mesh-symbol")["layout"]["text-field"];
+const colorScheme = convertColorScheme(fillColor);
 
 createTemperatureGradientLegend(legendGradient, colorScheme);
 
@@ -96,14 +102,14 @@ temperatureInputs.forEach((el) => {
     const selectedValue = event.target.value;
     console.log("Selected value:", selectedValue);
 
-    circleColor[2][1] = `${selectedValue}_temp`
+    fillColor[2][1] = `${selectedValue}_temp`
     textField[1] = `${selectedValue}_temp`;
 
     console.log(textField)
 
     // update the color scheme
-    map.setPaintProperty("pmtiles", "circle-color", circleColor);
-    map.setLayoutProperty("pmtiles-symbol", "text-field", textField);
+    map.setPaintProperty("mesh-fill", "fill-color", fillColor);
+    map.setLayoutProperty("mesh-symbol", "text-field", textField);
 
     if (selectedLngLat) {
       runColdestSearch();
@@ -112,14 +118,18 @@ temperatureInputs.forEach((el) => {
   });
 });
 
-radiusInput.addEventListener("input", (event) => {
-  const parsed = Number(event.target.value);
-  radiusKm = Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
-  if (selectedLngLat) {
-    updateSearchAreaDisplay();
-    runColdestSearch();
-  }
-});
+if (radiusInput) {
+  radiusInput.addEventListener("input", (event) => {
+    const parsed = Number(event.target.value);
+    radiusKm = Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+    if (selectedLngLat) {
+      updateSearchAreaDisplay();
+      runColdestSearch();
+    }
+  });
+} else {
+  console.warn("radius-input element is missing; using default radius 50km.");
+}
 
 map.on("load", () => {
   map.getCanvas().style.cursor = "crosshair";
@@ -226,7 +236,8 @@ function runColdestSearch() {
     if (!coords) {
       return;
     }
-    const candidate = new maplibregl.LngLat(coords[0], coords[1]);
+    const candidateCoord = extractRepresentativeCoordinate(feature);
+    const candidate = new maplibregl.LngLat(candidateCoord[0], candidateCoord[1]);
     const distance = center.distanceTo(candidate);
     if (distance > radiusMeters) {
       return;
@@ -239,7 +250,7 @@ function runColdestSearch() {
       coldest = {
         value,
         distance,
-        coordinates: coords,
+        coordinates: candidateCoord,
         properties: feature.properties,
       };
     }
@@ -263,7 +274,7 @@ function queryFeaturesNearSelection(center, radiusMeters) {
   const projected = map.project(center);
   const minPoint = [projected.x - radiusPixels, projected.y - radiusPixels];
   const maxPoint = [projected.x + radiusPixels, projected.y + radiusPixels];
-  return map.queryRenderedFeatures([minPoint, maxPoint], { layers: ["pmtiles"] });
+  return map.queryRenderedFeatures([minPoint, maxPoint], { layers: ["mesh-fill"] });
 }
 
 // Webメルカトルの解像度 (m/px) を算出し、任意半径をスクリーンスペースに写像する
@@ -300,6 +311,55 @@ function updateResultMarker(coordinates) {
     coldestMarker = new maplibregl.Marker({ color: "#ff3b30" });
   }
   coldestMarker.setLngLat(coordinates).addTo(map);
+}
+
+function extractRepresentativeCoordinate(feature) {
+  const geom = feature.geometry;
+  if (!geom) {
+    return [feature.properties?.longitude || 0, feature.properties?.latitude || 0];
+  }
+  if (geom.type === "Point") {
+    return geom.coordinates;
+  }
+  if (geom.type === "Polygon") {
+    const ring = geom.coordinates[0];
+    if (!ring || ring.length < 3) {
+      return ring?.[0] || [0, 0];
+    }
+    const lastIndex = ring.length - 1;
+    const coords = ring.slice(0, lastIndex);
+    const sum = coords.reduce(
+      (acc, coord) => {
+        acc[0] += coord[0];
+        acc[1] += coord[1];
+        return acc;
+      },
+      [0, 0]
+    );
+    return [sum[0] / coords.length, sum[1] / coords.length];
+  }
+  if (geom.type === "MultiPolygon") {
+    const firstPoly = geom.coordinates[0];
+    if (!firstPoly) {
+      return [0, 0];
+    }
+    const ring = firstPoly[0];
+    if (!ring || ring.length < 3) {
+      return ring?.[0] || [0, 0];
+    }
+    const lastIndex = ring.length - 1;
+    const coords = ring.slice(0, lastIndex);
+    const sum = coords.reduce(
+      (acc, coord) => {
+        acc[0] += coord[0];
+        acc[1] += coord[1];
+        return acc;
+      },
+      [0, 0]
+    );
+    return [sum[0] / coords.length, sum[1] / coords.length];
+  }
+  return [0, 0];
 }
 
 function addSearchAreaLayers() {
