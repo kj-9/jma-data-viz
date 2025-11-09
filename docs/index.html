@@ -22,7 +22,13 @@
       padding: 10px;
     }
 
-    .map-overlay .map-overlay-inner {
+    .map-overlay {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .panel-stack {
       background-color: #fff;
       box-shadow: 0 8px 18px rgba(13, 23, 32, 0.12);
       border-radius: 12px;
@@ -30,6 +36,13 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
+    }
+
+    .legend-stack {
+      background-color: rgba(255, 255, 255, 0.92);
+      border: 1px solid #e1e7ef;
+      border-radius: 12px;
+      padding: 12px;
     }
 
     .panel-section {
@@ -202,14 +215,16 @@
 <body>
   <div id="map" class="map"></div>
   <div class="map-overlay top">
-    <div class="map-overlay-inner">
+    <div class="panel-stack">
+      <div class="section-header">
+        <span class="section-title">表示設定</span>
+      </div>
       <div class="panel-section">
         <div class="section-header">
           <span class="section-title">データ日付</span>
           <div class="section-controls">
             <button class="ghost-button" id="prev-date-btn">前へ</button>
             <button class="ghost-button" id="next-date-btn">次へ</button>
-            <button class="ghost-button primary-chip" id="locate-btn">現在地</button>
           </div>
         </div>
         <div class="chip-row" id="recent-dates"></div>
@@ -232,7 +247,15 @@
           </label>
         </div>
       </div>
+    </div>
 
+    <div class="panel-stack">
+      <div class="section-header">
+        <span class="section-title">検索設定</span>
+        <div class="section-controls">
+          <button class="ghost-button primary-chip" id="locate-btn">現在地</button>
+        </div>
+      </div>
       <div class="panel-section">
         <label class="section-title" for="radius-input">検索半径 (km)</label>
         <div class="radius-slider">
@@ -240,17 +263,17 @@
           <div class="radius-value"><span id="radius-value">50</span> km</div>
         </div>
       </div>
-
-      <div class="panel-section legend-card">
-        <label class="section-title" for="legend-gradient">気温(°C)</label>
-        <div id="legend-gradient"></div>
-      </div>
-
       <div class="panel-section">
         <div id="search-result" class="result-panel">
           地図をクリックすると指定半径内で最も低い気温の地点を検索します。
         </div>
       </div>
+    </div>
+    <div class="legend-stack">
+      <div class="section-header" style="margin-bottom: 6px;">
+        <span class="section-title">気温(°C)</span>
+      </div>
+      <div id="legend-gradient"></div>
     </div>
     <script type="module" src="main.js"></script>
 </body>
