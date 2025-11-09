@@ -48,6 +48,7 @@ const searchResultPanel = document.getElementById('search-result');
 const recentDatesContainer = document.getElementById('recent-dates');
 const prevDateBtn = document.getElementById('prev-date-btn');
 const nextDateBtn = document.getElementById('next-date-btn');
+const locateBtn = document.getElementById('locate-btn');
 const dateSelector = document.getElementById('date-selector');
 const radiusValueLabel = document.getElementById('radius-value');
 let radiusKm = 50;
@@ -89,6 +90,10 @@ if (dateSelector) {
 if (prevDateBtn && nextDateBtn) {
   prevDateBtn.addEventListener("click", () => stepDate(1));
   nextDateBtn.addEventListener("click", () => stepDate(-1));
+}
+
+if (locateBtn) {
+  locateBtn.addEventListener("click", () => locateUser());
 }
 
 
@@ -549,4 +554,58 @@ function updateRadiusLabel(value) {
     return;
   }
   radiusValueLabel.textContent = `${value}`;
+}
+
+function locateUser() {
+  if (!navigator.geolocation) {
+    notifyLocateError("このブラウザでは現在地取得に対応していません。");
+    return;
+  }
+
+  setLocateButtonState(true);
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      setLocateButtonState(false);
+      const { longitude, latitude } = pos.coords;
+      selectedLngLat = new maplibregl.LngLat(longitude, latitude);
+      map.flyTo({
+        center: selectedLngLat,
+        zoom: Math.max(map.getZoom(), 7),
+        speed: 0.8,
+      });
+      if (!centerMarker) {
+        centerMarker = new maplibregl.Marker({ color: "#444" });
+      }
+      centerMarker.setLngLat(selectedLngLat).addTo(map);
+      updateSearchAreaDisplay();
+      runColdestSearch();
+    },
+    (error) => {
+      setLocateButtonState(false);
+      notifyLocateError(`現在地の取得に失敗しました (${error.message})`);
+    },
+    { enableHighAccuracy: true, timeout: 15000 }
+  );
+}
+
+function setLocateButtonState(isLoading) {
+  if (!locateBtn) {
+    return;
+  }
+  if (isLoading) {
+    locateBtn.disabled = true;
+    locateBtn.dataset.label = locateBtn.textContent;
+    locateBtn.textContent = "取得中...";
+  } else {
+    locateBtn.disabled = false;
+    locateBtn.textContent = locateBtn.dataset.label || "現在地";
+  }
+}
+
+function notifyLocateError(message) {
+  if (searchResultPanel) {
+    searchResultPanel.textContent = message;
+  } else {
+    console.warn(message);
+  }
 }

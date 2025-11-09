@@ -75,6 +75,12 @@
       cursor: not-allowed;
     }
 
+    .primary-chip {
+      background-color: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+    }
+
     .chip-row {
       display: flex;
       flex-wrap: wrap;
@@ -203,6 +209,7 @@
           <div class="section-controls">
             <button class="ghost-button" id="prev-date-btn">前へ</button>
             <button class="ghost-button" id="next-date-btn">次へ</button>
+            <button class="ghost-button primary-chip" id="locate-btn">現在地</button>
           </div>
         </div>
         <div class="chip-row" id="recent-dates"></div>
