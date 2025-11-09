@@ -45,7 +45,6 @@ const EARTH_RADIUS_METERS = 6378137;
 
 const radiusInput = document.getElementById('radius-input');
 const searchResultPanel = document.getElementById('search-result');
-const recentDatesContainer = document.getElementById('recent-dates');
 const prevDateBtn = document.getElementById('prev-date-btn');
 const nextDateBtn = document.getElementById('next-date-btn');
 const locateBtn = document.getElementById('locate-btn');
@@ -76,7 +75,6 @@ dates.forEach((date) => {
   dateSelector.appendChild(option);
 });
 
-renderRecentDateButtons();
 updateDateUIState();
 
 // on date change, update the source
@@ -480,30 +478,9 @@ function emptyFeature() {
   };
 }
 
-function renderRecentDateButtons() {
-  if (!recentDatesContainer) {
-    return;
-  }
-  recentDatesContainer.innerHTML = "";
-  const displayDates = dates.slice(0, 6);
-  displayDates.forEach((date) => {
-    const button = document.createElement("button");
-    button.className = "chip-button";
-    button.textContent = formatDateLabel(date);
-    button.dataset.date = date;
-    button.addEventListener("click", () => applyDateChange(date));
-    recentDatesContainer.appendChild(button);
-  });
-}
-
 function updateDateUIState() {
   if (dateSelector) {
     dateSelector.value = dates[selectedDateIndex];
-  }
-  if (recentDatesContainer) {
-    recentDatesContainer.querySelectorAll(".chip-button").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.date === dates[selectedDateIndex]);
-    });
   }
   if (prevDateBtn) {
     prevDateBtn.disabled = selectedDateIndex >= dates.length - 1;
