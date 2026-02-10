@@ -35,7 +35,11 @@ const map = new maplibregl.Map({
   container: "map",
   style,
   center: [139.7, 35.7],
-  zoom: 5, // starting zoom
+  zoom: 4.2, // Japan-centered initial view
+});
+
+map.on("style.load", () => {
+  map.setProjection({ type: "globe" });
 });
 
 const SEARCH_AREA_SOURCE_ID = "search-area";

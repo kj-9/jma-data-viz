@@ -8,14 +8,28 @@
   <script src="https://cdn.jsdelivr.net/npm/pmtiles@3.0.7/dist/pmtiles.min.js"></script>
   <link href='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css' rel='stylesheet' />
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap');
+
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
       overflow: hidden;
-      font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
-      color: #1c2733;
+      font: 13px/1.45 "M PLUS 1", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+      color: #dbe8f4;
+      background: radial-gradient(circle at 20% 15%, #1b2d46 0%, #0a1420 55%, #060b12 100%);
+    }
+
+    :root {
+      --panel-bg: rgba(10, 20, 34, 0.52);
+      --panel-border: rgba(146, 178, 208, 0.22);
+      --panel-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+      --text-main: #e8f1fb;
+      --text-sub: #a9bfd6;
+      --accent: #51a7ff;
+      --accent-strong: #2b88f3;
+      --danger: #ff8b5b;
     }
 
     .map {
@@ -26,49 +40,46 @@
     .map-overlay {
       font: inherit;
       position: absolute;
-      width: 200px;
-      top: 0;
-      left: 0;
-      padding: 10px;
-    }
-
-    .map-overlay {
+      width: min(296px, calc(100vw - 24px));
+      top: 12px;
+      left: 12px;
+      padding: 0;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
+      z-index: 3;
     }
 
     .panel-stack {
-      background-color: #fff;
-      box-shadow: 0 8px 18px rgba(13, 23, 32, 0.12);
-      border-radius: 12px;
-      padding: 16px;
+      background: linear-gradient(160deg, rgba(17, 35, 57, 0.82) 0%, var(--panel-bg) 100%);
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--panel-shadow);
+      border-radius: 14px;
+      padding: 11px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 10px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
 
-.legend-stack {
-  background-color: rgba(255, 255, 255, 0.92);
-  border: 1px solid #e1e7ef;
-  border-radius: 12px;
-  padding: 12px;
-}
-
     .legend-stack {
-      background-color: rgba(255, 255, 255, 0.92);
-      border: 1px solid #e1e7ef;
-      border-radius: 12px;
-      padding: 12px;
+      background: linear-gradient(160deg, rgba(18, 37, 58, 0.86) 0%, rgba(10, 21, 35, 0.76) 100%);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 12px 12px 10px;
       font: inherit;
+      box-shadow: var(--panel-shadow);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
 
     .legend-stack.bottom-right {
       position: absolute;
-      right: 16px;
-      top: 16px;
-      width: 220px;
-      box-shadow: 0 6px 18px rgba(13, 23, 32, 0.15);
+      right: 12px;
+      top: 12px;
+      width: min(300px, calc(100vw - 24px));
+      z-index: 3;
     }
 
     .panel-section {
@@ -78,7 +89,7 @@
     }
 
     .panel-section + .panel-section {
-      border-top: 1px solid #eceff4;
+      border-top: 1px solid rgba(158, 184, 208, 0.2);
       padding-top: 12px;
     }
 
@@ -89,9 +100,10 @@
     }
 
     .section-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #1c2733;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: var(--text-main);
     }
 
     .section-controls {
@@ -100,24 +112,32 @@
     }
 
     .ghost-button {
-      border: 1px solid #d0d7de;
-      background-color: #fff;
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-size: 12px;
+      border: 1px solid rgba(161, 194, 224, 0.36);
+      background: rgba(28, 49, 74, 0.62);
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 10px;
+      font-weight: 600;
       cursor: pointer;
-      color: #48525c;
+      color: #e4effa;
+      transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+    }
+
+    .ghost-button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: rgba(190, 220, 246, 0.72);
+      background: rgba(38, 65, 98, 0.75);
     }
 
     .ghost-button:disabled {
-      opacity: 0.4;
+      opacity: 0.45;
       cursor: not-allowed;
     }
 
     .primary-chip {
-      background-color: #2563eb;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
       color: #fff;
-      border-color: #2563eb;
+      border-color: rgba(97, 173, 248, 0.9);
     }
 
     .chip-row {
@@ -127,30 +147,32 @@
     }
 
     .chip-button {
-      border: 1px solid #dce3ea;
-      background-color: #f6f8fb;
-      color: #44505f;
+      border: 1px solid rgba(147, 176, 204, 0.34);
+      background-color: rgba(33, 58, 85, 0.52);
+      color: #d6e8fb;
       border-radius: 999px;
       padding: 4px 10px;
-      font-size: 12px;
+      font-size: 10px;
       cursor: pointer;
-      transition: all 0.15s ease;
+      transition: all 0.18s ease;
     }
 
     .chip-button.active {
-      background-color: #2563eb;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
       color: #fff;
-      border-color: #2563eb;
+      border-color: rgba(97, 173, 248, 0.9);
     }
 
     .map-overlay-inner select,
     .radius-input {
       width: 100%;
       padding: 6px 8px;
-      border-radius: 6px;
-      border: 1px solid #d0d7de;
-      font-size: 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(151, 182, 208, 0.42);
+      font-size: 11px;
       box-sizing: border-box;
+      color: var(--text-main);
+      background: rgba(18, 34, 54, 0.8);
     }
 
     .radio-options {
@@ -160,40 +182,44 @@
     }
 
     .radio-option {
-      border: 1px solid #d0d7de;
-      border-radius: 6px;
-      padding: 6px;
+      border: 1px solid rgba(147, 178, 205, 0.34);
+      border-radius: 8px;
+      padding: 5px;
       display: flex;
       gap: 4px;
       align-items: center;
-      font-size: 12px;
+      font-size: 11px;
       cursor: pointer;
-      background-color: #fff;
+      background: rgba(22, 42, 66, 0.62);
+      color: var(--text-main);
     }
 
     .radio-option input[type="radio"] {
       margin: 0;
+      accent-color: var(--accent);
     }
 
     .result-panel {
-      font-size: 12px;
-      line-height: 1.6;
-      border: 1px solid #e1e7ef;
+      font-size: 11px;
+      line-height: 1.5;
+      border: 1px solid rgba(145, 176, 203, 0.32);
       border-radius: 8px;
-      padding: 10px;
-      background-color: #f8fafc;
+      padding: 8px;
+      background: rgba(15, 31, 49, 0.68);
+      color: var(--text-main);
     }
 
     .result-panel strong {
       display: inline-block;
-      min-width: 80px;
+      min-width: 68px;
+      color: var(--text-sub);
     }
 
     .legend-card {
       border-radius: 8px;
-      border: 1px solid #eceff4;
+      border: 1px solid rgba(155, 186, 211, 0.24);
       padding: 8px;
-      background: #fff;
+      background: rgba(17, 35, 55, 0.7);
     }
 
     .radius-slider {
@@ -204,9 +230,9 @@
 
     .radius-input {
       appearance: none;
-      height: 4px;
+      height: 6px;
       border: none;
-      background: #d0d7de;
+      background: linear-gradient(90deg, rgba(81, 167, 255, 0.7) 0%, rgba(255, 139, 91, 0.8) 100%);
       border-radius: 999px;
       padding: 0;
     }
@@ -216,24 +242,51 @@
       width: 14px;
       height: 14px;
       border-radius: 50%;
-      background: #2563eb;
+      background: #ffffff;
       cursor: pointer;
-      box-shadow: 0 0 0 2px #fff;
+      box-shadow: 0 0 0 3px rgba(81, 167, 255, 0.42);
     }
 
     .radius-input::-moz-range-thumb {
       width: 14px;
       height: 14px;
       border-radius: 50%;
-      background: #2563eb;
+      background: #fff;
       cursor: pointer;
-      border: 2px solid #fff;
+      border: 3px solid rgba(81, 167, 255, 0.42);
     }
 
     .radius-value {
-      font-size: 12px;
-      color: #48525c;
+      font-size: 10px;
+      color: var(--text-sub);
       text-align: right;
+      font-family: "Space Mono", monospace;
+      letter-spacing: 0.03em;
+    }
+
+    .legend-stack #legend-gradient {
+      color: var(--text-main);
+      font-size: 11px;
+      font-family: "Space Mono", monospace;
+    }
+
+    @media (max-width: 900px) {
+      .map-overlay {
+        width: calc(100vw - 16px);
+        left: 8px;
+        top: 8px;
+      }
+
+      .legend-stack.bottom-right {
+        top: auto;
+        bottom: 8px;
+        right: 8px;
+        width: calc(100vw - 16px);
+      }
+
+      .panel-stack {
+        padding: 10px;
+      }
     }
   </style>
 </head>

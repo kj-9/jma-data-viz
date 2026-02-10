@@ -1,3 +1,8 @@
 data/*
 !data/japan-land.geojson
 jma-data/
+
+.playwright-cli/
+output/
+
+node_modules
