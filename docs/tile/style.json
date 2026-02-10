@@ -17,6 +17,10 @@
       "minzoom": 0,
       "maxzoom": 20,
       "attribution": "&copy; OpenStreetMap contributors &copy; CARTO"
+    },
+    "pref-borders": {
+      "type": "geojson",
+      "data": "data/pref-borders.geojson"
     }
   },
   "sprite": "",
@@ -79,6 +83,49 @@
           "#dc382d"
         ],
         "fill-opacity": 0.56
+      }
+    },
+    {
+      "id": "pref-border-line",
+      "type": "line",
+      "source": "pref-borders",
+      "minzoom": 5,
+      "maxzoom": 24,
+      "layout": {
+        "visibility": "visible"
+      },
+      "paint": {
+        "line-color": "rgba(212, 232, 250, 0.68)",
+        "line-width": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          5,
+          0.6,
+          8,
+          0.9,
+          11,
+          1.2
+        ],
+        "line-opacity": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+          5,
+          0.35,
+          8,
+          0.5,
+          11,
+          0.62
+        ]
       }
     },
     {
